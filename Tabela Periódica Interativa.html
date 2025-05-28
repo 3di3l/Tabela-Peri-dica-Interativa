@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tabela Periódica Interativa</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        
+        .periodic-table {
+            display: grid;
+            grid-template-columns: repeat(18, 60px);
+            grid-template-rows: repeat(10, 60px);
+            gap: 5px;
+            margin: 20px auto;
+            max-width: 1170px;
+        }
+        
+        .element {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background-color: white;
+        }
+        
+        .element:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        }
+        
+        .element .number {
+            font-size: 10px;
+            align-self: flex-start;
+            margin: 2px 0 0 5px;
+        }
+        
+        .element .symbol {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .element .name {
+            font-size: 8px;
+            margin-top: 2px;
+        }
+        
+        .info-panel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+            z-index: 100;
+            display: none;
+            max-width: 300px;
+        }
+        
+        .info-panel h2 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        
+        .info-panel p {
+            margin: 5px 0;
+        }
+        
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            font-size: 20px;
+            color: #777;
+        }
+        
+        .empty {
+            visibility: hidden;
+        }
+        
+        /* Cores por grupo */
+        .alkali-metal { background-color: #FF9D9D; }
+        .alkaline-earth { background-color: #FFDEAD; }
+        .transition-metal { background-color: #FFC0C0; }
+        .basic-metal { background-color: #CCCCCC; }
+        .semimetal { background-color: #CCCC99; }
+        .nonmetal { background-color: #A0FFA0; }
+        .halogen { background-color: #FFFF99; }
+        .noble-gas { background-color: #C0FFFF; }
+        .lanthanide { background-color: #FFBFFF; }
+        .actinide { background-color: #FF99CC; }
+        .unknown { background-color: #E0E0E0; }
+    </style>
+</head>
+<body>
+    <h1>Tabela Periódica Interativa</h1>
+    
+    <div class="periodic-table" id="periodicTable"></div>
+    
+    <div class="info-panel" id="infoPanel">
+        <span class="close-btn" id="closeBtn">&times;</span>
+        <h2 id="elementName"></h2>
+        <p><strong>Símbolo:</strong> <span id="elementSymbol"></span></p>
+        <p><strong>Número Atômico:</strong> <span id="atomicNumber"></span></p>
+        <p><strong>Massa Atômica:</strong> <span id="atomicMass"></span></p>
+        <p><strong>Grupo:</strong> <span id="elementGroup"></span></p>
+        <p><strong>Período:</strong> <span id="elementPeriod"></span></p>
+        <p><strong>Estado (25°C):</strong> <span id="elementState"></span></p>
+        <p><strong>Configuração Eletrônica:</strong> <span id="electronConfig"></span></p>
+    </div>
+
+    <script>
+        // Dados dos elementos químicos
+        const elements = [
+            { number: 1, symbol: "H", name: "Hidrogênio", mass: "1.008", group: 1, period: 1, state: "Gasoso", config: "1s¹", category: "nonmetal" },
+            { number: 2, symbol: "He", name: "Hélio", mass: "4.0026", group: 18, period: 1, state: "Gasoso", config: "1s²", category: "noble-gas" },
+            { number: 3, symbol: "Li", name: "Lítio", mass: "6.94", group: 1, period: 2, state: "Sólido", config: "[He] 2s¹", category: "alkali-metal" },
+            { number: 4, symbol: "Be", name: "Berílio", mass: "9.0122", group: 2, period: 2, state: "Sólido", config: "[He] 2s²", category: "alkaline-earth" },
+            { number: 5, symbol: "B", name: "Boro", mass: "10.81", group: 13, period: 2, state: "Sólido", config: "[He] 2s² 2p¹", category: "semimetal" },
+            { number: 6, symbol: "C", name: "Carbono", mass: "12.011", group: 14, period: 2, state: "Sólido", config: "[He] 2s² 2p²", category: "nonmetal" },
+            { number: 7, symbol: "N", name: "Nitrogênio", mass: "14.007", group: 15, period: 2, state: "Gasoso", config: "[He] 2s² 2p³", category: "nonmetal" },
+            { number: 8, symbol: "O", name: "Oxigênio", mass: "15.999", group: 16, period: 2, state: "Gasoso", config: "[He] 2s² 2p⁴", category: "nonmetal" },
+            { number: 9, symbol: "F", name: "Flúor", mass: "18.998", group: 17, period: 2, state: "Gasoso", config: "[He] 2s² 2p⁵", category: "halogen" },
+            { number: 10, symbol: "Ne", name: "Neônio", mass: "20.180", group: 18, period: 2, state: "Gasoso", config: "[He] 2s² 2p⁶", category: "noble-gas" },
+            { number: 11, symbol: "Na", name: "Sódio", mass: "22.990", group: 1, period: 3, state: "Sólido", config: "[Ne] 3s¹", category: "alkali-metal" },
+            { number: 12, symbol: "Mg", name: "Magnésio", mass: "24.305", group: 2, period: 3, state: "Sólido", config: "[Ne] 3s²", category: "alkaline-earth" },
+            { number: 13, symbol: "Al", name: "Alumínio", mass: "26.982", group: 13, period: 3, state: "Sólido", config: "[Ne] 3s² 3p¹", category: "basic-metal" },
+            { number: 14, symbol: "Si", name: "Silício", mass: "28.085", group: 14, period: 3, state: "Sólido", config: "[Ne] 3s² 3p²", category: "semimetal" },
+            { number: 15, symbol: "P", name: "Fósforo", mass: "30.974", group: 15, period: 3, state: "Sólido", config: "[Ne] 3s² 3p³", category: "nonmetal" },
+            { number: 16, symbol: "S", name: "Enxofre", mass: "32.06", group: 16, period: 3, state: "Sólido", config: "[Ne] 3s² 3p⁴", category: "nonmetal" },
+            { number: 17, symbol: "Cl", name: "Cloro", mass: "35.45", group: 17, period: 3, state: "Gasoso", config: "[Ne] 3s² 3p⁵", category: "halogen" },
+            { number: 18, symbol: "Ar", name: "Argônio", mass: "39.948", group: 18, period: 3, state: "Gasoso", config: "[Ne] 3s² 3p⁶", category: "noble-gas" },
+            { number: 19, symbol: "K", name: "Potássio", mass: "39.098", group: 1, period: 4, state: "Sólido", config: "[Ar] 4s¹", category: "alkali-metal" },
+            { number: 20, symbol: "Ca", name: "Cálcio", mass: "40.078", group: 2, period: 4, state: "Sólido", config: "[Ar] 4s²", category: "alkaline-earth" },
+            { number: 21, symbol: "Sc", name: "Escândio", mass: "44.956", group: 3, period: 4, state: "Sólido", config: "[Ar] 3d¹ 4s²", category: "transition-metal" },
+            { number: 22, symbol: "Ti", name: "Titânio", mass: "47.867", group: 4, period: 4, state: "Sólido", config: "[Ar] 3d² 4s²", category: "transition-metal" },
+            { number: 23, symbol: "V", name: "Vanádio", mass: "50.942", group: 5, period: 4, state: "Sólido", config: "[Ar] 3d³ 4s²", category: "transition-metal" },
+            { number: 24, symbol: "Cr", name: "Cromo", mass: "51.996", group: 6, period: 4, state: "Sólido", config: "[Ar] 3d⁵ 4s¹", category: "transition-metal" },
+            { number: 25, symbol: "Mn", name: "Manganês", mass: "54.938", group: 7, period: 4, state: "Sólido", config: "[Ar] 3d⁵ 4s²", category: "transition-metal" },
+            { number: 26, symbol: "Fe", name: "Ferro", mass: "55.845", group: 8, period: 4, state: "Sólido", config: "[Ar] 3d⁶ 4s²", category: "transition-metal" },
+            { number: 27, symbol: "Co", name: "Cobalto", mass: "58.933", group: 9, period: 4, state: "Sólido", config: "[Ar] 3d⁷ 4s²", category: "transition-metal" },
+            { number: 28, symbol: "Ni", name: "Níquel", mass: "58.693", group: 10, period: 4, state: "Sólido", config: "[Ar] 3d⁸ 4s²", category: "transition-metal" },
+            { number: 29, symbol: "Cu", name: "Cobre", mass: "63.546", group: 11, period: 4, state: "Sólido", config: "[Ar] 3d¹⁰ 4s¹", category: "transition-metal" },
+            { number: 30, symbol: "Zn", name: "Zinco", mass: "65.38", group: 12, period: 4, state: "Sólido", config: "[Ar] 3d¹⁰ 4s²", category: "transition-metal" },
+            { number: 31, symbol: "Ga", name: "Gálio", mass: "69.723", group: 13, period: 4, state: "Sólido", config: "[Ar] 3d¹⁰ 4s² 4p¹", category: "basic-metal" },
+            { number: 32, symbol: "Ge", name: "Germânio", mass: "72.630", group: 14, period: 4, state: "Sólido", config: "[Ar] 3d¹⁰ 4s² 4p²", category: "semimetal" },
+            { number: 33, symbol: "As", name: "Arsênio", mass: "74.922", group: 15, period: 4, state: "Sólido", config: "[Ar] 3d¹⁰ 4s² 4p³", category: "semimetal" },
+            { number: 34, symbol: "Se", name: "Selênio", mass: "78.971", group: 16, period: 4, state: "Sólido", config: "[Ar] 3d¹⁰ 4s² 4p⁴", category: "nonmetal" },
+            { number: 35, symbol: "Br", name: "Bromo", mass: "79.904", group: 17, period: 4, state: "Líquido", config: "[Ar] 3d¹⁰ 4s² 4p⁵", category: "halogen" },
+            { number: 36, symbol: "Kr", name: "Criptônio", mass: "83.798", group: 18, period: 4, state: "Gasoso", config: "[Ar] 3d¹⁰ 4s² 4p⁶", category: "noble-gas" },
+            { number: 37, symbol: "Rb", name: "Rubídio", mass: "85.468", group: 1, period: 5, state: "Sólido", config: "[Kr] 5s¹", category: "alkali-metal" },
+            { number: 38, symbol: "Sr", name: "Estrôncio", mass: "87.62", group: 2, period: 5, state: "Sólido", config: "[Kr] 5s²", category: "alkaline-earth" },
+            { number: 39, symbol: "Y", name: "Ítrio", mass: "88.906", group: 3, period: 5, state: "Sólido", config: "[Kr] 4d¹ 5s²", category: "transition-metal" },
+            { number: 40, symbol: "Zr", name: "Zircônio", mass: "91.224", group: 4, period: 5, state: "Sólido", config: "[Kr] 4d² 5s²", category: "transition-metal" },
+            { number: 41, symbol: "Nb", name: "Nióbio", mass: "92.906", group: 5, period: 5, state: "Sólido", config: "[Kr] 4d⁴ 5s¹", category: "transition-metal" },
+            { number: 42, symbol: "Mo", name: "Molibdênio", mass: "95.95", group: 6, period: 5, state: "Sólido", config: "[Kr] 4d⁵ 5s¹", category: "transition-metal" },
+            { number: 43, symbol: "Tc", name: "Tecnécio", mass: "98", group: 7, period: 5, state: "Sólido", config: "[Kr] 4d⁵ 5s²", category: "transition-metal" },
+            { number: 44, symbol: "Ru", name: "Rutênio", mass: "101.07", group: 8, period: 5, state: "Sólido", config: "[Kr] 4d⁷ 5s¹", category: "transition-metal" },
+            { number: 45, symbol: "Rh", name: "Ródio", mass: "102.91", group: 9, period: 5, state: "Sólido", config: "[Kr] 4d⁸ 5s¹", category: "transition-metal" },
+            { number: 46, symbol: "Pd", name: "Paládio", mass: "106.42", group: 10, period: 5, state: "Sólido", config: "[Kr] 4d¹⁰", category: "transition-metal" },
+            { number: 47, symbol: "Ag", name: "Prata", mass: "107.87", group: 11, period: 5, state: "Sólido", config: "[Kr] 4d¹⁰ 5s¹", category: "transition-metal" },
+            { number: 48, symbol: "Cd", name: "Cádmio", mass: "112.41", group: 12, period: 5, state: "Sólido", config: "[Kr] 4d¹⁰ 5s²", category: "transition-metal" },
+            { number: 49, symbol: "In", name: "Índio", mass: "114.82", group: 13, period: 5, state: "Sólido", config: "[Kr] 4d¹⁰ 5s² 5p¹", category: "basic-metal" },
+            { number: 50, symbol: "Sn", name: "Estanho", mass: "118.71", group: 14, period: 5, state: "Sólido", config: "[Kr] 4d¹⁰ 5s² 5p²", category: "basic-metal" },
+            { number: 51, symbol: "Sb", name: "Antimônio", mass: "121.76", group: 15, period: 5, state: "Sólido", config: "[Kr] 4d¹⁰ 5s² 5p³", category: "semimetal" },
+            { number: 52, symbol: "Te", name: "Telúrio", mass: "127.60", group: 16, period: 5, state: "Sólido", config: "[Kr] 4d¹⁰ 5s² 5p⁴", category: "semimetal" },
+            { number: 53, symbol: "I", name: "Iodo", mass: "126.90", group: 17, period: 5, state: "Sólido", config: "[Kr] 4d¹⁰ 5s² 5p⁵", category: "halogen" },
+            { number: 54, symbol: "Xe", name: "Xenônio", mass: "131.29", group: 18, period: 5, state: "Gasoso", config: "[Kr] 4d¹⁰ 5s² 5p⁶", category: "noble-gas" },
+            { number: 55, symbol: "Cs", name: "Césio", mass: "132.91", group: 1, period: 6, state: "Sólido", config: "[Xe] 6s¹", category: "alkali-metal" },
+            { number: 56, symbol: "Ba", name: "Bário", mass: "137.33", group: 2, period: 6, state: "Sólido", config: "[Xe] 6s²", category: "alkaline-earth" },
+            // Lantanídeos
+            { number: 57, symbol: "La", name: "Lantânio", mass: "138.91", group: 3, period: 6, state: "Sólido", config: "[Xe] 5d¹ 6s²", category: "lanthanide" },
+            { number: 58, symbol: "Ce", name: "Cério", mass: "140.12", group: 3, period: 6, state: "Sólido", config: "[Xe] 4f¹ 5d¹ 6s²", category: "lanthanide" },
+            { number: 59, symbol: "Pr", name: "Praseodímio", mass: "140.91", group: 3, period: 6, state: "Sólido", config: "[Xe] 4f³ 6s²", category: "lanthanide" },
+            { number: 60, symbol: "Nd", name: "Neodímio", mass: "144.24", group: 3, period: 6, state: "Sólido", config: "[Xe] 4f⁴ 6s²", category: "lanthanide" },
+            { number: 61, symbol: "Pm", name: "Promécio", mass: "145", group: 3, period: 6, state: "Sólido", config: "[Xe] 4f⁵ 6s²", category: "lanthanide" },
+            { number: 62, symbol: "Sm", name: "Samário", mass: "150.36", group: 3, period: 6, state: "Sólido", config: "[Xe] 4f⁶ 6s²", category: "lanthanide" },
+            { number: 63, symbol: "Eu", name: "Európio", mass: "151.96", group: 3, period: 6, state: "Sólido", config: "[Xe] 4f⁷ 6s²", category: "lanthanide" },
+            { number: 64, symbol: "Gd", name: "Gadolínio", mass: "157.25", group: 3, period: 6, state: "Sólido", config: "[Xe] 4f⁷ 5d¹ 6s²", category: "lanthanide" },
+            { number: 65, symbol: "Tb", name: "Térbio", mass: "158.93", group: 3, period: 6, state: "Sólido", config: "[Xe] 4f⁹ 6s²", category: "lanthanide" },
+            { number: 66, symbol: "Dy", name: "Disprósio", mass: "162.50", group: 3, period: 6, state: "Sólido", config: "[Xe] 4f¹⁰ 6s²", category: "lanthanide" },
+            { number: 67, symbol: "Ho", name: "Hólmio", mass: "164.93", group: 3, period: 6, state: "Sólido", config: "[Xe] 4f¹¹ 6s²", category: "lanthanide" },
+            { number: 68, symbol: "Er", name: "Érbio", mass: "167.26", group: 3, period: 6, state: "Sólido", config: "[Xe] 4f¹² 6s²", category: "lanthanide" },
+            { number: 69, symbol: "Tm", name: "Túlio", mass: "168.93", group: 3, period: 6, state: "Sólido", config: "[Xe] 4f¹³ 6s²", category: "lanthanide" },
+            { number: 70, symbol: "Yb", name: "Itérbio", mass: "173.05", group: 3, period: 6, state: "Sólido", config: "[Xe] 4f¹⁴ 6s²", category: "lanthanide" },
+            { number: 71, symbol: "Lu", name: "Lutécio", mass: "174.97", group: 3, period: 6, state: "Sólido", config: "[Xe] 4f¹⁴ 5d¹ 6s²", category: "lanthanide" },
+            // Continuação da tabela principal
+            { number: 72, symbol: "Hf", name: "Háfnio", mass: "178.49", group: 4, period: 6, state: "Sólido", config: "[Xe] 4f¹⁴ 5d² 6s²", category: "transition-metal" },
+            { number: 73, symbol: "Ta", name: "Tântalo", mass: "180.95", group: 5, period: 6, state: "Sólido", config: "[Xe] 4f¹⁴ 5d³ 6s²", category: "transition-metal" },
+            { number: 74, symbol: "W", name: "Tungstênio", mass: "183.84", group: 6, period: 6, state: "Sólido", config: "[Xe] 4f¹⁴ 5d⁴ 6s²", category: "transition-metal" },
+            { number: 75, symbol: "Re", name: "Rênio", mass: "186.21", group: 7, period: 6, state: "Sólido", config: "[Xe] 4f¹⁴ 5d⁵ 6s²", category: "transition-metal" },
+            { number: 76, symbol: "Os", name: "Ósmio", mass: "190.23", group: 8, period: 6, state: "Sólido", config: "[Xe] 4f¹⁴ 5d⁶ 6s²", category: "transition-metal" },
+            { number: 77, symbol: "Ir", name: "Irídio", mass: "192.22", group: 9, period: 6, state: "Sólido", config: "[Xe] 4f¹⁴ 5d⁷ 6s²", category: "transition-metal" },
+            { number: 78, symbol: "Pt", name: "Platina", mass: "195.08", group: 10, period: 6, state: "Sólido", config: "[Xe] 4f¹⁴ 5d⁹ 6s¹", category: "transition-metal" },
+            { number: 79, symbol: "Au", name: "Ouro", mass: "196.97", group: 11, period: 6, state: "Sólido", config: "[Xe] 4f¹⁴ 5d¹⁰ 6s¹", category: "transition-metal" },
+            { number: 80, symbol: "Hg", name: "Mercúrio", mass: "200.59", group: 12, period: 6, state: "Líquido", config: "[Xe] 4f¹⁴ 5d¹⁰ 6s²", category: "transition-metal" },
+            { number: 81, symbol: "Tl", name: "Tálio", mass: "204.38", group: 13, period: 6, state: "Sólido", config: "[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p¹", category: "basic-metal" },
+            { number: 82, symbol: "Pb", name: "Chumbo", mass: "207.2", group: 14, period: 6, state: "Sólido", config: "[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p²", category: "basic-metal" },
+            { number: 83, symbol: "Bi", name: "Bismuto", mass: "208.98", group: 15, period: 6, state: "Sólido", config: "[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p³", category: "basic-metal" },
+            { number: 84, symbol: "Po", name: "Polônio", mass: "209", group: 16, period: 6, state: "Sólido", config: "[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁴", category: "semimetal" },
+            { number: 85, symbol: "At", name: "Astato", mass: "210", group: 17, period: 6, state: "Sólido", config: "[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁵", category: "halogen" },
+            { number: 86, symbol: "Rn", name: "Radônio", mass: "222", group: 18, period: 6, state: "Gasoso", config: "[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁶", category: "noble-gas" },
+            { number: 87, symbol: "Fr", name: "Frâncio", mass: "223", group: 1, period: 7, state: "Sólido", config: "[Rn] 7s¹", category: "alkali-metal" },
+            { number: 88, symbol: "Ra", name: "Rádio", mass: "226", group: 2, period: 7, state: "Sólido", config: "[Rn] 7s²", category: "alkaline-earth" },
+            // Actinídeos
+            { number: 89, symbol: "Ac", name: "Actínio", mass: "227", group: 3, period: 7, state: "Sólido", config: "[Rn] 6d¹ 7s²", category: "actinide" },
+            { number: 90, symbol: "Th", name: "Tório", mass: "232.04", group: 3, period: 7, state: "Sólido", config: "[Rn] 6d² 7s²", category: "actinide" },
+            { number: 91, symbol: "Pa", name: "Protactínio", mass: "231.04", group: 3, period: 7, state: "Sólido", config: "[Rn] 5f² 6d¹ 7s²", category: "actinide" },
+            { number: 92, symbol: "U", name: "Urânio", mass: "238.03", group: 3, period: 7, state: "Sólido", config: "[Rn] 5f³ 6d¹ 7s²", category: "actinide" },
+            { number: 93, symbol: "Np", name: "Netúnio", mass: "237", group: 3, period: 7, state: "Sólido", config: "[Rn] 5f⁴ 6d¹ 7s²", category: "actinide" },
+            { number: 94, symbol: "Pu", name: "Plutônio", mass: "244", group: 3, period: 7, state: "Sólido", config: "[Rn] 5f⁶ 7s²", category: "actinide" },
+            { number: 95, symbol: "Am", name: "Amerício", mass: "243", group: 3, period: 7, state: "Sólido", config: "[Rn] 5f⁷ 7s²", category: "actinide" },
+            { number: 96, symbol: "Cm", name: "Cúrio", mass: "247", group: 3, period: 7, state: "Sólido", config: "[Rn] 5f⁷ 6d¹ 7s²", category: "actinide" },
+            { number: 97, symbol: "Bk", name: "Berquélio", mass: "247", group: 3, period: 7, state: "Sólido", config: "[Rn] 5f⁹ 7s²", category: "actinide" },
+            { number: 98, symbol: "Cf", name: "Califórnio", mass: "251", group: 3, period: 7, state: "Sólido", config: "[Rn] 5f¹⁰ 7s²", category: "actinide" },
+            { number: 99, symbol: "Es", name: "Einstênio", mass: "252", group: 3, period: 7, state: "Sólido", config: "[Rn] 5f¹¹ 7s²", category: "actinide" },
+            { number: 100, symbol: "Fm", name: "Férmio", mass: "257", group: 3, period: 7, state: "Sólido", config: "[Rn] 5f¹² 7s²", category: "actinide" },
+            { number: 101, symbol: "Md", name: "Mendelévio", mass: "258", group: 3, period: 7, state: "Sólido", config: "[Rn] 5f¹³ 7s²", category: "actinide" },
+            { number: 102, symbol: "No", name: "Nobélio", mass: "259", group: 3, period: 7, state: "Sólido", config: "[Rn] 5f¹⁴ 7s²", category: "actinide" },
+            { number: 103, symbol: "Lr", name: "Laurêncio", mass: "262", group: 3, period: 7, state: "Sólido", config: "[Rn] 5f¹⁴ 6d¹ 7s²", category: "actinide" },
+            // Continuação da tabela principal
+            { number: 104, symbol: "Rf", name: "Rutherfórdio", mass: "267", group: 4, period: 7, state: "Desconhecido", config: "[Rn] 5f¹⁴ 6d² 7s²", category: "transition-metal" },
+            { number: 105, symbol: "Db", name: "Dúbnio", mass: "270", group: 5, period: 7, state: "Desconhecido", config: "[Rn] 5f¹⁴ 6d³ 7s²", category: "transition-metal" },
+            { number: 106, symbol: "Sg", name: "Seabórgio", mass: "271", group: 6, period: 7, state: "Desconhecido", config: "[Rn] 5f¹⁴ 6d⁴ 7s²", category: "transition-metal" },
+            { number: 107, symbol: "Bh", name: "Bóhrio", mass: "270", group: 7, period: 7, state: "Desconhecido", config: "[Rn] 5f¹⁴ 6d⁵ 7s²", category: "transition-metal" },
+            { number: 108, symbol: "Hs", name: "Hássio", mass: "277", group: 8, period: 7, state: "Desconhecido", config: "[Rn] 5f¹⁴ 6d⁶ 7s²", category: "transition-metal" },
+            { number: 109, symbol: "Mt", name: "Meitnério", mass: "276", group: 9, period: 7, state: "Desconhecido", config: "[Rn] 5f¹⁴ 6d⁷ 7s²", category: "unknown" },
+            { number: 110, symbol: "Ds", name: "Darmstádio", mass: "281", group: 10, period: 7, state: "Desconhecido", config: "[Rn] 5f¹⁴ 6d⁸ 7s²", category: "unknown" },
+            { number: 111, symbol: "Rg", name: "Roentgênio", mass: "280", group: 11, period: 7, state: "Desconhecido", config: "[Rn] 5f¹⁴ 6d⁹ 7s²", category: "unknown" },
+            { number: 112, symbol: "Cn", name: "Copernício", mass: "285", group: 12, period: 7, state: "Desconhecido", config: "[Rn] 5f¹⁴ 6d¹⁰ 7s²", category: "unknown" },
+            { number: 113, symbol: "Nh", name: "Nihônio", mass: "286", group: 13, period: 7, state: "Desconhecido", config: "[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p¹", category: "unknown" },
+            { number: 114, symbol: "Fl", name: "Fleróvio", mass: "289", group: 14, period: 7, state: "Desconhecido", config: "[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p²", category: "unknown" },
+            { number: 115, symbol: "Mc", name: "Moscóvio", mass: "290", group: 15, period: 7, state: "Desconhecido", config: "[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p³", category: "unknown" },
+            { number: 116, symbol: "Lv", name: "Livermório", mass: "293", group: 16, period: 7, state: "Desconhecido", config: "[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁴", category: "unknown" },
+            { number: 117, symbol: "Ts", name: "Tenesso", mass: "294", group: 17, period: 7, state: "Desconhecido", config: "[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁵", category: "unknown" },
+            { number: 118, symbol: "Og", name: "Oganessônio", mass: "294", group: 18, period: 7, state: "Desconhecido", config: "[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁶", category: "unknown" }
+        ];
+
+        // Função para criar a tabela periódica
+        function createPeriodicTable() {
+            const table = document.getElementById('periodicTable');
+            
+            // Cria os elementos da tabela principal (grupos 1-18, períodos 1-7)
+            for (let period = 1; period <= 7; period++) {
+                for (let group = 1; group <= 18; group++) {
+                    const elementData = elements.find(el => el.group === group && el.period === period);
+                    
+                    const cell = document.createElement('div');
+                    if (elementData) {
+                        cell.className = `element ${elementData.category}`;
+                        cell.innerHTML = `
+                            <div class="number">${elementData.number}</div>
+                            <div class="symbol">${elementData.symbol}</div>
+                            <div class="name">${elementData.name}</div>
+                        `;
+                        cell.addEventListener('click', () => showElementInfo(elementData));
+                    } else {
+                        // Células vazias para posições sem elementos
+                        cell.className = 'empty';
+                    }
+                    
+                    // Posicionamento especial para os elementos do bloco f
+                    if (period === 6 && group === 3) {
+                        cell.style.gridRow = '6 / span 1';
+                        cell.style.gridColumn = '3 / span 1';
+                    } else if (period === 7 && group === 3) {
+                        cell.style.gridRow = '7 / span 1';
+                        cell.style.gridColumn = '3 / span 1';
+                    } else {
+                        cell.style.gridRow = period;
+                        cell.style.gridColumn = group;
+                    }
+                    
+                    table.appendChild(cell);
+                }
+            }
+            
+            // Adiciona os lantanídeos (período 6, abaixo da tabela principal)
+            const lanthanides = elements.filter(el => el.category === 'lanthanide' && el.number !== 57);
+            createSeries(lanthanides, 8, 3, 'Lantanídeos');
+            
+            // Adiciona os actinídeos (período 7, abaixo dos lantanídeos)
+            const actinides = elements.filter(el => el.category === 'actinide' && el.number !== 89);
+            createSeries(actinides, 9, 3, 'Actinídeos');
+        }
+        
+        // Função para criar uma série de elementos (lantanídeos ou actinídeos)
+        function createSeries(series, row, startCol, label) {
+            const table = document.getElementById('periodicTable');
+            
+            // Adiciona o rótulo da série
+            const labelCell = document.createElement('div');
+            labelCell.className = 'series-label';
+            labelCell.textContent = label;
+            labelCell.style.gridRow = row;
+            labelCell.style.gridColumn = `${startCol} / span 1`;
+            table.appendChild(labelCell);
+            
+            // Adiciona os elementos da série
+            series.forEach((element, index) => {
+                const cell = document.createElement('div');
+                cell.className = `element ${element.category}`;
+                cell.innerHTML = `
+                    <div class="number">${element.number}</div>
+                    <div class="symbol">${element.symbol}</div>
+                    <div class="name">${element.name}</div>
+                `;
+                cell.addEventListener('click', () => showElementInfo(element));
+                
+                cell.style.gridRow = row;
+                cell.style.gridColumn = `${startCol + 1 + index}`;
+                
+                table.appendChild(cell);
+            });
+        }
+        
+        // Função para mostrar informações do elemento
+        function showElementInfo(element) {
+            document.getElementById('elementName').textContent = element.name;
+            document.getElementById('elementSymbol').textContent = element.symbol;
+            document.getElementById('atomicNumber').textContent = element.number;
+            document.getElementById('atomicMass').textContent = element.mass;
+            document.getElementById('elementGroup').textContent = element.group;
+            document.getElementById('elementPeriod').textContent = element.period;
+            document.getElementById('elementState').textContent = element.state;
+            document.getElementById('electronConfig').textContent = element.config;
+            
+            document.getElementById('infoPanel').style.display = 'block';
+        }
+        
+        // Fecha o painel de informações
+        document.getElementById('closeBtn').addEventListener('click', function() {
+            document.getElementById('infoPanel').style.display = 'none';
+        });
+        
+        // Cria a tabela periódica quando a página carrega
+        window.onload = createPeriodicTable;
+    </script>
+</body>
+</html>
